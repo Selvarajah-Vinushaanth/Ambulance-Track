@@ -5,8 +5,9 @@ import { useBooking } from '../contexts/BookingContext';
 import Header from '../components/Header';
 import MapComponent from '../components/MapComponent';
 import LoadingSpinner from '../components/LoadingSpinner';
+import DriverRating from '../components/DriverRating';
 import styled from 'styled-components';
-import { ArrowLeft, MapPin, Phone, User, Clock, AlertCircle, Navigation, CheckCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, User, Clock, AlertCircle, Navigation, CheckCircle, Star, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 
 const Container = styled.div`
@@ -104,7 +105,7 @@ const StatusBadge = styled.div`
       case 'arrived':
         return 'background: #d1fae5; color: #065f46;';
       case 'completed':
-        return 'background: #dcfce7; color: #166534;';
+        return 'background: #dcfce7; color: #166534; border: 2px solid #10b981;';
       case 'cancelled':
         return 'background: #fee2e2; color: #dc2626;';
       default:
@@ -137,6 +138,19 @@ const StepIcon = styled.div`
   color: ${props => props.completed || props.active ? 'white' : '#6b7280'};
   font-weight: 500;
   flex-shrink: 0;
+  ${props => props.completed && 'animation: pulse 2s infinite;'}
+  
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
 `;
 
 const StepContent = styled.div`
@@ -221,6 +235,32 @@ const RefreshButton = styled.button`
   }
 `;
 
+const CompletionMessage = styled.div`
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border: 2px solid #10b981;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  text-align: center;
+  color: #166534;
+`;
+
+const CompletionTitle = styled.h3`
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+`;
+
+const CompletionText = styled.p`
+  margin: 0;
+  font-size: 0.875rem;
+  opacity: 0.8;
+`;
+
 const TrackingPage = () => {
   const { bookingId } = useParams();
   const { user } = useAuth();
@@ -228,6 +268,7 @@ const TrackingPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   useEffect(() => {
     if (bookingId) {
@@ -276,7 +317,7 @@ const TrackingPage = () => {
       { id: 'assigned', title: 'Driver Assigned', description: 'An ambulance driver has been assigned to your booking' },
       { id: 'en_route', title: 'En Route', description: 'The ambulance is on its way to your location' },
       { id: 'arrived', title: 'Arrived', description: 'The ambulance has arrived at your location' },
-      { id: 'completed', title: 'Completed', description: 'Journey completed successfully' }
+      { id: 'completed', title: 'Completed', description: 'Journey completed successfully ✅' }
     ];
 
     const statusOrder = ['pending', 'assigned', 'en_route', 'arrived', 'completed'];
@@ -284,8 +325,8 @@ const TrackingPage = () => {
 
     return steps.map((step, index) => ({
       ...step,
-      completed: index < currentStatusIndex,
-      active: index === currentStatusIndex
+      completed: index < currentStatusIndex || (index === currentStatusIndex && activeBooking?.status === 'completed'),
+      active: index === currentStatusIndex && activeBooking?.status !== 'completed'
     }));
   };
 
@@ -397,6 +438,65 @@ const TrackingPage = () => {
               </InfoItem>
             )}
 
+            {activeBooking.status === 'completed' && (
+              <CompletionMessage>
+                <CompletionTitle>
+                  <CheckCircle size={24} />
+                  Journey Completed Successfully!
+                </CompletionTitle>
+                <CompletionText>
+                  The ambulance has successfully completed your journey. Thank you for using our service.
+                </CompletionText>
+                {activeBooking.pricing && (
+                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <DollarSign size={16} />
+                      <strong>Total Fare: ${activeBooking.pricing.totalFare?.toFixed(2) || '0.00'}</strong>
+                    </div>
+                    <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
+                      Base Fare: ${activeBooking.pricing.baseFare?.toFixed(2) || '0.00'} • 
+                      Distance Fare: ${activeBooking.pricing.distanceFare?.toFixed(2) || '0.00'}
+                    </div>
+                  </div>
+                )}
+                {user?.role === 'patient' && activeBooking.driver && !activeBooking.feedback && (
+                  <button
+                    onClick={() => setShowRatingModal(true)}
+                    style={{
+                      marginTop: '1rem',
+                      padding: '0.75rem 1.5rem',
+                      background: '#f59e0b',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500'
+                    }}
+                  >
+                    <Star size={16} />
+                    Rate Your Driver
+                  </button>
+                )}
+                {activeBooking.feedback && (
+                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <Star size={16} fill="#f59e0b" color="#f59e0b" />
+                      <strong>Your Rating: {activeBooking.feedback.rating}/5</strong>
+                    </div>
+                    {activeBooking.feedback.comment && (
+                      <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
+                        "{activeBooking.feedback.comment}"
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CompletionMessage>
+            )}
+
             <TrackingSteps>
               <SectionTitle>Tracking Status</SectionTitle>
               {getTrackingSteps().map((step, index) => (
@@ -442,6 +542,17 @@ const TrackingPage = () => {
           </MapCard>
         </TrackingGrid>
       </Main>
+      
+      {showRatingModal && activeBooking.driver && (
+        <DriverRating
+          driver={activeBooking.driver}
+          booking={activeBooking}
+          onClose={() => setShowRatingModal(false)}
+          onSubmit={() => {
+            fetchBookingDetails(); // Refresh to show the submitted rating
+          }}
+        />
+      )}
     </Container>
   );
 };

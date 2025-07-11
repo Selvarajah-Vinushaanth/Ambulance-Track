@@ -6,9 +6,11 @@ import RegisterPage from './pages/RegisterPage';
 import PatientDashboard from './pages/PatientDashboard';
 import DriverDashboard from './pages/DriverDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import BookingPage from './pages/BookingPage';
+import BookingPage from './pages/EnhancedBookingPage';
 import TrackingPage from './pages/TrackingPage';
 import LoadingSpinner from './components/LoadingSpinner';
+import EmergencyAlert from './components/EmergencyAlert';
+import Analytics from './components/Analytics';
 
 function App() {
   const { user, loading } = useAuth();
@@ -44,6 +46,10 @@ function App() {
           path="/track/:bookingId" 
           element={user ? <TrackingPage /> : <Navigate to="/login" />} 
         />
+        <Route 
+          path="/analytics" 
+          element={user?.role === 'admin' ? <Analytics /> : <Navigate to="/login" />} 
+        />
         
         {/* Default redirect */}
         <Route 
@@ -57,6 +63,7 @@ function App() {
           } 
         />
       </Routes>
+      <EmergencyAlert />
     </div>
   );
 }

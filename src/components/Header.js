@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { LogOut, User, Settings } from 'lucide-react';
+import Notifications from './Notifications';
 
 const HeaderContainer = styled.header`
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
@@ -89,6 +90,7 @@ const Header = () => {
             <UserName>{user?.name}</UserName>
             <UserRole>{user?.role}</UserRole>
           </UserDetails>
+          <Notifications />
           <LogoutButton onClick={handleLogout}>
             <LogOut size={16} />
             Logout

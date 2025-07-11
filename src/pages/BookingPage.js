@@ -6,8 +6,9 @@ import { useForm } from 'react-hook-form';
 import Header from '../components/Header';
 import MapComponent from '../components/MapComponent';
 import styled from 'styled-components';
-import { MapPin, Phone, User, AlertCircle, Calendar, Clock, ArrowLeft } from 'lucide-react';
+import { MapPin, Phone, User, AlertCircle, Calendar, Clock, ArrowLeft, Navigation, Target, Loader } from 'lucide-react';
 import { getLocationFromIP, getCurrentPosition } from '../utils/geolocation';
+import toast from 'react-hot-toast';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -240,6 +241,45 @@ const LocationInfo = styled.div`
   color: #6b7280;
 `;
 
+const AutoLocationButton = styled.button`
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background: #2563eb;
+  }
+
+  &:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+`;
+
+const LocationInputContainer = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+`;
+
+const CoordinateDisplay = styled.div`
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+`;
+
 const BookingPage = () => {
   const { user } = useAuth();
   const { createBooking, loading } = useBooking();
@@ -249,6 +289,9 @@ const BookingPage = () => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [priority, setPriority] = useState('medium');
+  const [pickupCoordinates, setPickupCoordinates] = useState(null);
+  const [destinationCoordinates, setDestinationCoordinates] = useState(null);
+  const [hospitals, setHospitals] = useState([]);
 
   const pickupLocation = watch('pickupLocation');
   const destinationLocation = watch('destinationLocation');
@@ -275,11 +318,70 @@ const BookingPage = () => {
       setGettingLocation(true);
       const position = await getCurrentPosition();
       setCurrentLocation(position);
-      setValue('pickupLocation', `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`);
+      setPickupCoordinates(position);
+      setValue('pickupLocation', `${position.lat},${position.lng}`);
+      
+      // Reverse geocode to get address
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}`
+        );
+        const data = await response.json();
+        if (data.display_name) {
+          setValue('pickupAddress', data.display_name);
+        }
+      } catch (geocodeError) {
+        console.error('Geocoding error:', geocodeError);
+      }
+      
+      toast.success('Precise location obtained');
     } catch (error) {
-      console.error('Failed to get precise location:', error);
+      toast.error('Unable to get precise location');
     } finally {
       setGettingLocation(false);
+    }
+  };
+
+  const getLocationFromIPEnhanced = async () => {
+    setGettingLocation(true);
+    try {
+      const location = await getLocationFromIP();
+      setCurrentLocation(location);
+      setPickupCoordinates(location);
+      setValue('pickupLocation', `${location.lat},${location.lng}`);
+      setValue('pickupAddress', `${location.city}, ${location.country}`);
+      toast.success('Location detected from IP');
+    } catch (error) {
+      toast.error('Unable to detect location');
+    } finally {
+      setGettingLocation(false);
+    }
+  };
+
+  const handleAddressChange = async (field, value) => {
+    if (value.length > 3) {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=1`
+        );
+        const data = await response.json();
+        if (data.length > 0) {
+          const location = {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon)
+          };
+          
+          if (field === 'pickupAddress') {
+            setPickupCoordinates(location);
+            setValue('pickupLocation', `${location.lat},${location.lng}`);
+          } else if (field === 'destinationAddress') {
+            setDestinationCoordinates(location);
+            setValue('destinationLocation', `${location.lat},${location.lng}`);
+          }
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+      }
     }
   };
 
@@ -448,17 +550,33 @@ const BookingPage = () => {
                     {...register('pickupAddress', {
                       required: 'Pickup address is required'
                     })}
+                    onChange={(e) => handleAddressChange('pickupAddress', e.target.value)}
                   />
                 </InputWrapper>
                 {errors.pickupAddress && <ErrorMessage>{errors.pickupAddress.message}</ErrorMessage>}
-                <LocationButton
-                  type="button"
-                  onClick={getCurrentLocationAccurate}
-                  disabled={gettingLocation}
-                >
-                  <MapPin size={16} />
-                  {gettingLocation ? 'Getting Location...' : 'Use Current Location'}
-                </LocationButton>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <LocationButton
+                    type="button"
+                    onClick={getCurrentLocationAccurateEnhanced}
+                    disabled={gettingLocation}
+                  >
+                    <Navigation size={16} />
+                    {gettingLocation ? 'Getting GPS...' : 'GPS Location'}
+                  </LocationButton>
+                  <LocationButton
+                    type="button"
+                    onClick={getLocationFromIPEnhanced}
+                    disabled={gettingLocation}
+                  >
+                    <Target size={16} />
+                    {gettingLocation ? 'Getting IP...' : 'IP Location'}
+                  </LocationButton>
+                </div>
+                {pickupCoordinates && (
+                  <CoordinateDisplay>
+                    📍 {pickupCoordinates.lat.toFixed(6)}, {pickupCoordinates.lng.toFixed(6)}
+                  </CoordinateDisplay>
+                )}
               </InputGroup>
 
               <InputGroup>
@@ -492,9 +610,15 @@ const BookingPage = () => {
                     {...register('destinationAddress', {
                       required: 'Destination address is required'
                     })}
+                    onChange={(e) => handleAddressChange('destinationAddress', e.target.value)}
                   />
                 </InputWrapper>
                 {errors.destinationAddress && <ErrorMessage>{errors.destinationAddress.message}</ErrorMessage>}
+                {destinationCoordinates && (
+                  <CoordinateDisplay>
+                    📍 {destinationCoordinates.lat.toFixed(6)}, {destinationCoordinates.lng.toFixed(6)}
+                  </CoordinateDisplay>
+                )}
               </InputGroup>
 
               <InputGroup>
@@ -530,10 +654,13 @@ const BookingPage = () => {
                 </LocationInfo>
               )}
               <MapComponent
-                patientLocation={currentLocation}
+                patientLocation={pickupCoordinates || currentLocation}
+                destination={destinationCoordinates}
                 showAmbulance={false}
                 showPatient={true}
-                center={currentLocation ? [currentLocation.lat, currentLocation.lng] : null}
+                showRoute={true}
+                center={pickupCoordinates ? [pickupCoordinates.lat, pickupCoordinates.lng] : 
+                       currentLocation ? [currentLocation.lat, currentLocation.lng] : null}
               />
             </MapSection>
           </div>

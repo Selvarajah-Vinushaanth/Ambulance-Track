@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useBooking } from '../contexts/BookingContext';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import BookingCard from '../components/BookingCard';
 import styled from 'styled-components';
-import { Users, Calendar, Clock, CheckCircle, AlertTriangle, MapPin, UserCheck } from 'lucide-react';
+import { Users, Calendar, Clock, CheckCircle, AlertTriangle, MapPin, UserCheck, BarChart3, TrendingUp } from 'lucide-react';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -231,9 +232,35 @@ const EmptyStateText = styled.p`
   margin-bottom: 1rem;
 `;
 
+const NavigationBar = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+`;
+
+const NavButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: ${props => props.active ? '#3b82f6' : 'white'};
+  color: ${props => props.active ? 'white' : '#6b7280'};
+  border: 2px solid ${props => props.active ? '#3b82f6' : '#e5e7eb'};
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.active ? '#2563eb' : '#f9fafb'};
+    border-color: ${props => props.active ? '#2563eb' : '#d1d5db'};
+  }
+`;
+
 const AdminDashboard = () => {
   const { user } = useAuth();
   const { bookings, drivers, getBookings, getDrivers, assignDriver, updateBookingStatus, loading } = useBooking();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -305,6 +332,17 @@ const AdminDashboard = () => {
     <Container>
       <Header />
       <Main>
+        <NavigationBar>
+          <NavButton onClick={() => navigate('/analytics')}>
+            <BarChart3 size={20} />
+            Analytics Dashboard
+          </NavButton>
+          <NavButton onClick={() => navigate('/admin')}>
+            <Users size={20} />
+            Admin Dashboard
+          </NavButton>
+        </NavigationBar>
+        
         <StatsGrid>
           <StatCard>
             <StatIcon color="#dc2626">

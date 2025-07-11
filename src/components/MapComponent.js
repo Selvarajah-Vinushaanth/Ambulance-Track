@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import styled from 'styled-components';
 import { getLocationFromIP } from '../utils/geolocation';
@@ -21,10 +21,11 @@ const MapWrapper = styled.div`
 `;
 
 const ambulanceIcon = new L.Icon({
-  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgMTJIMTVNMTIgOVYxNU0yMSAxMkM5IDEyIDEyIDIxIDEyIDIxQzEyIDIxIDMgMTIgMTIgMTJDMTIgMTIgMTIgMyAxMiAxMkMxMiAxMiAyMSAxMiAyMSAxMloiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+',
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgMTJIMTVNMTIgOVYxNU0yMSAxMkM5IDEyIDEyIDIxIDEyIDIxQzEyIDIxIDMgMTIgMTIgMTJDMTIgMTIgMTIgMyAxMiAxMkMxMiAxMiAyMSAxMiAyMSAxMloiIHN0cm9rZT0iI0ZGRkZGRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+',
   iconSize: [40, 40],
   iconAnchor: [20, 20],
   popupAnchor: [0, -20],
+  className: 'ambulance-icon'
 });
 
 const patientIcon = new L.Icon({
@@ -32,6 +33,15 @@ const patientIcon = new L.Icon({
   iconSize: [30, 30],
   iconAnchor: [15, 15],
   popupAnchor: [0, -15],
+  className: 'patient-icon'
+});
+
+const destinationIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwQzIxIDEwIDIxIDEwIDIxIDEwWiIgc3Ryb2tlPSIjMTBiOTgxIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4=',
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+  popupAnchor: [0, -15],
+  className: 'destination-icon'
 });
 
 const MapComponent = ({ 
@@ -40,10 +50,12 @@ const MapComponent = ({
   destination,
   showPatient = true,
   showAmbulance = true,
+  showRoute = true,
   center = null
 }) => {
   const [mapCenter, setMapCenter] = useState([40.7128, -74.0060]); // Default to NYC
   const [userLocation, setUserLocation] = useState(null);
+  const [routePoints, setRoutePoints] = useState([]);
 
   useEffect(() => {
     // Get user location from IP
@@ -72,6 +84,26 @@ const MapComponent = ({
     }
   }, [center, ambulanceLocation, patientLocation]);
 
+  // Create route points for the blue path
+  useEffect(() => {
+    if (ambulanceLocation && patientLocation && showRoute) {
+      // Simple straight line route - in production, you'd use a routing service
+      const points = [
+        [ambulanceLocation.lat, ambulanceLocation.lng],
+        [patientLocation.lat, patientLocation.lng]
+      ];
+      setRoutePoints(points);
+    } else if (ambulanceLocation && destination && showRoute) {
+      const points = [
+        [ambulanceLocation.lat, ambulanceLocation.lng],
+        [destination.lat, destination.lng]
+      ];
+      setRoutePoints(points);
+    } else {
+      setRoutePoints([]);
+    }
+  }, [ambulanceLocation, patientLocation, destination, showRoute]);
+
   return (
     <MapWrapper>
       <MapContainer
@@ -84,6 +116,17 @@ const MapComponent = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
+        {/* Blue route path */}
+        {routePoints.length > 0 && (
+          <Polyline
+            positions={routePoints}
+            color="#2563eb"
+            weight={4}
+            opacity={0.8}
+            dashArray="5, 10"
+          />
+        )}
+        
         {showAmbulance && ambulanceLocation && (
           <Marker
             position={[ambulanceLocation.lat, ambulanceLocation.lng]}
@@ -95,6 +138,7 @@ const MapComponent = ({
                 <p>Current Location</p>
                 <p>Lat: {ambulanceLocation.lat.toFixed(4)}</p>
                 <p>Lng: {ambulanceLocation.lng.toFixed(4)}</p>
+                <p>Status: En Route</p>
               </div>
             </Popup>
           </Marker>
@@ -107,8 +151,8 @@ const MapComponent = ({
           >
             <Popup>
               <div>
-                <h3>👤 Patient</h3>
-                <p>Pickup Location</p>
+                <h3>👤 Patient Location</h3>
+                <p>Pickup Point</p>
                 <p>Lat: {patientLocation.lat.toFixed(4)}</p>
                 <p>Lng: {patientLocation.lng.toFixed(4)}</p>
               </div>
@@ -117,11 +161,14 @@ const MapComponent = ({
         )}
         
         {destination && (
-          <Marker position={[destination.lat, destination.lng]}>
+          <Marker
+            position={[destination.lat, destination.lng]}
+            icon={destinationIcon}
+          >
             <Popup>
               <div>
-                <h3>🏥 Hospital</h3>
-                <p>Destination</p>
+                <h3>🏥 Destination</h3>
+                <p>Drop-off Point</p>
                 <p>Lat: {destination.lat.toFixed(4)}</p>
                 <p>Lng: {destination.lng.toFixed(4)}</p>
               </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { Clock, MapPin, User, Calendar, AlertCircle } from 'lucide-react';
+import { Clock, MapPin, User, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 const Card = styled.div`
@@ -49,13 +49,26 @@ const StatusBadge = styled.span`
       case 'arrived':
         return 'background: #d1fae5; color: #065f46;';
       case 'completed':
-        return 'background: #dcfce7; color: #166534;';
+        return 'background: #dcfce7; color: #166534; border: 2px solid #10b981;';
       case 'cancelled':
         return 'background: #fee2e2; color: #dc2626;';
       default:
         return 'background: #f3f4f6; color: #374151;';
     }
   }}
+  ${props => props.status === 'completed' && 'animation: pulse 2s infinite;'}
+  
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
 `;
 
 const Priority = styled.span`
@@ -196,6 +209,7 @@ const BookingCard = ({ booking, onStatusUpdate, onAssignDriver, onTrack, userRol
           <BookingId>Booking #{booking._id?.slice(-6)}</BookingId>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
             <StatusBadge status={booking.status}>
+              {booking.status === 'completed' && <CheckCircle size={14} style={{ marginRight: '0.25rem' }} />}
               {booking.status}
             </StatusBadge>
             {booking.priority && (
