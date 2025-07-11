@@ -872,12 +872,6 @@ app.post('/api/emergency-alert', authenticateToken, async (req, res) => {
   try {
     const { location, message } = req.body;
     
-    // Calculate emergency pricing (higher rates for emergency)
-    const emergencyBaseFare = 100; // Higher base fare for emergency
-    const emergencyDistanceFare = 5; // Higher per km rate
-    const estimatedDistance = 10; // Default distance estimate
-    const totalFare = emergencyBaseFare + (emergencyDistanceFare * estimatedDistance);
-    
     // Create emergency booking
     const emergencyBooking = new Booking({
       patientName: req.user.name,
@@ -890,20 +884,9 @@ app.post('/api/emergency-alert', authenticateToken, async (req, res) => {
       medicalCondition: message || 'Emergency situation',
       priority: 'critical',
       status: 'pending',
-      pricing: {
-        baseFare: emergencyBaseFare,
-        distanceFare: emergencyDistanceFare * estimatedDistance,
-        totalFare: totalFare,
-        paymentStatus: 'pending'
-      },
       additionalInfo: {
         specialInstructions: 'EMERGENCY ALERT - Immediate response required'
-      },
-      timeline: [{
-        status: 'pending',
-        timestamp: new Date(),
-        notes: 'Emergency alert created'
-      }]
+      }
     });
 
     await emergencyBooking.save();
@@ -937,88 +920,6 @@ app.post('/api/emergency-alert', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Emergency alert error:', error);
     res.status(500).json({ message: 'Failed to send emergency alert' });
-  }
-});
-
-// Rate driver endpoint
-app.post('/api/drivers/:driverId/rate', authenticateToken, async (req, res) => {
-  try {
-    const { driverId } = req.params;
-    const { rating, comment, bookingId } = req.body;
-    
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
-    }
-
-    // Find the driver
-    const driver = await User.findById(driverId);
-    if (!driver || driver.role !== 'driver') {
-      return res.status(404).json({ message: 'Driver not found' });
-    }
-
-    // Update the booking with rating
-    if (bookingId) {
-      const booking = await Booking.findById(bookingId);
-      if (booking && booking.patientId.toString() === req.user.id) {
-        booking.feedback = {
-          rating,
-          comment,
-          submittedAt: new Date()
-        };
-        await booking.save();
-      }
-    }
-
-    // Update driver's rating
-    const currentRating = driver.driverInfo?.rating || 5;
-    const totalRides = (driver.driverInfo?.totalRides || 0) + 1;
-    const newRating = ((currentRating * (totalRides - 1)) + rating) / totalRides;
-
-    driver.driverInfo = {
-      ...driver.driverInfo,
-      rating: newRating,
-      totalRides: totalRides
-    };
-    await driver.save();
-
-    // Create notification for driver
-    const notification = new Notification({
-      userId: driverId,
-      title: '⭐ New Rating Received',
-      message: `You received a ${rating}-star rating${comment ? ': ' + comment : ''}`,
-      type: 'system'
-    });
-    await notification.save();
-
-    res.json({ 
-      message: 'Rating submitted successfully',
-      newRating: newRating.toFixed(1),
-      totalRides 
-    });
-  } catch (error) {
-    console.error('Rate driver error:', error);
-    res.status(500).json({ message: 'Failed to submit rating' });
-  }
-});
-
-// Get driver ratings
-app.get('/api/drivers/:driverId/ratings', authenticateToken, async (req, res) => {
-  try {
-    const { driverId } = req.params;
-    
-    const ratings = await Booking.find({
-      driver: driverId,
-      'feedback.rating': { $exists: true }
-    })
-    .populate('patientId', 'name')
-    .select('feedback createdAt patientId')
-    .sort({ 'feedback.submittedAt': -1 })
-    .limit(20);
-
-    res.json(ratings);
-  } catch (error) {
-    console.error('Get ratings error:', error);
-    res.status(500).json({ message: 'Failed to get ratings' });
   }
 });
 

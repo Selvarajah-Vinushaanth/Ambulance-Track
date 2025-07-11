@@ -5,9 +5,8 @@ import { useBooking } from '../contexts/BookingContext';
 import Header from '../components/Header';
 import MapComponent from '../components/MapComponent';
 import LoadingSpinner from '../components/LoadingSpinner';
-import DriverRating from '../components/DriverRating';
 import styled from 'styled-components';
-import { ArrowLeft, MapPin, Phone, User, Clock, AlertCircle, Navigation, CheckCircle, Star, DollarSign } from 'lucide-react';
+import { ArrowLeft, MapPin, Phone, User, Clock, AlertCircle, Navigation, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 const Container = styled.div`
@@ -268,7 +267,6 @@ const TrackingPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showRatingModal, setShowRatingModal] = useState(false);
 
   useEffect(() => {
     if (bookingId) {
@@ -447,53 +445,6 @@ const TrackingPage = () => {
                 <CompletionText>
                   The ambulance has successfully completed your journey. Thank you for using our service.
                 </CompletionText>
-                {activeBooking.pricing && (
-                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      <DollarSign size={16} />
-                      <strong>Total Fare: ${activeBooking.pricing.totalFare?.toFixed(2) || '0.00'}</strong>
-                    </div>
-                    <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
-                      Base Fare: ${activeBooking.pricing.baseFare?.toFixed(2) || '0.00'} • 
-                      Distance Fare: ${activeBooking.pricing.distanceFare?.toFixed(2) || '0.00'}
-                    </div>
-                  </div>
-                )}
-                {user?.role === 'patient' && activeBooking.driver && !activeBooking.feedback && (
-                  <button
-                    onClick={() => setShowRatingModal(true)}
-                    style={{
-                      marginTop: '1rem',
-                      padding: '0.75rem 1.5rem',
-                      background: '#f59e0b',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontSize: '0.875rem',
-                      fontWeight: '500'
-                    }}
-                  >
-                    <Star size={16} />
-                    Rate Your Driver
-                  </button>
-                )}
-                {activeBooking.feedback && (
-                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      <Star size={16} fill="#f59e0b" color="#f59e0b" />
-                      <strong>Your Rating: {activeBooking.feedback.rating}/5</strong>
-                    </div>
-                    {activeBooking.feedback.comment && (
-                      <div style={{ fontSize: '0.875rem', opacity: 0.8 }}>
-                        "{activeBooking.feedback.comment}"
-                      </div>
-                    )}
-                  </div>
-                )}
               </CompletionMessage>
             )}
 
@@ -542,17 +493,6 @@ const TrackingPage = () => {
           </MapCard>
         </TrackingGrid>
       </Main>
-      
-      {showRatingModal && activeBooking.driver && (
-        <DriverRating
-          driver={activeBooking.driver}
-          booking={activeBooking}
-          onClose={() => setShowRatingModal(false)}
-          onSubmit={() => {
-            fetchBookingDetails(); // Refresh to show the submitted rating
-          }}
-        />
-      )}
     </Container>
   );
 };
