@@ -4,7 +4,7 @@ import { useBooking } from '../contexts/BookingContext';
 import Header from '../components/Header';
 import BookingCard from '../components/BookingCard';
 import MapComponent from '../components/MapComponent';
-import AddressInput from '../components/AddressInput';
+// import AddressInput from '../components/AddressInput';
 import styled from 'styled-components';
 import { MapPin, Clock, Navigation, CheckCircle, AlertCircle, Target, Crosshair } from 'lucide-react';
 import { watchPosition, clearWatch } from '../utils/geolocation';
