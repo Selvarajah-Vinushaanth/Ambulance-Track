@@ -28,7 +28,7 @@ const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 100000 // limit each IP to 100,000 requests per minute (very high)
 });
-app.use('/api/', limiter);
+// app.use('/api/', limiter);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ambulance-app', {
@@ -589,6 +589,50 @@ app.patch('/api/notifications/:id/read', authenticateToken, async (req, res) => 
   } catch (error) {
     console.error('Mark notification read error:', error);
     res.status(500).json({ message: 'Failed to mark notification as read' });
+  }
+});
+
+// Delete notification endpoint
+app.delete('/api/notifications/:id', authenticateToken, async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.id
+    });
+    
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+    
+    res.json({ message: 'Notification deleted successfully' });
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    res.status(500).json({ message: 'Failed to delete notification' });
+  }
+});
+
+// Delete all notifications endpoint
+app.delete('/api/notifications/delete-all', authenticateToken, async (req, res) => {
+  try {
+    await Notification.deleteMany({ userId: req.user.id });
+    res.json({ message: 'All notifications deleted successfully' });
+  } catch (error) {
+    console.error('Delete all notifications error:', error);
+    res.status(500).json({ message: 'Failed to delete all notifications' });
+  }
+});
+
+// Mark all notifications as read
+app.patch('/api/notifications/mark-all-read', authenticateToken, async (req, res) => {
+  try {
+    await Notification.updateMany(
+      { userId: req.user.id, read: false },
+      { read: true }
+    );
+    res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Mark all notifications read error:', error);
+    res.status(500).json({ message: 'Failed to mark all notifications as read' });
   }
 });
 

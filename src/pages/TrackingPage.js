@@ -328,10 +328,24 @@ const TrackingPage = () => {
     }));
   };
 
-  const parseLocation = (locationString) => {
-    if (!locationString) return null;
-    const [lat, lng] = locationString.split(',').map(coord => parseFloat(coord.trim()));
-    return { lat, lng };
+  const parseLocation = (locationData) => {
+    if (!locationData) return null;
+    
+    // If it's already an object with lat/lng, return it
+    if (typeof locationData === 'object' && locationData.lat && locationData.lng) {
+      return {
+        lat: parseFloat(locationData.lat),
+        lng: parseFloat(locationData.lng)
+      };
+    }
+    
+    // If it's a string, parse it
+    if (typeof locationData === 'string') {
+      const [lat, lng] = locationData.split(',').map(coord => parseFloat(coord.trim()));
+      return { lat, lng };
+    }
+    
+    return null;
   };
 
   if (loading) {
@@ -358,7 +372,17 @@ const TrackingPage = () => {
 
   const pickupLocation = parseLocation(activeBooking.pickupLocation);
   const destinationLocation = parseLocation(activeBooking.destinationLocation);
-  const ambulanceLocation = activeBooking.driver?.location;
+  const ambulanceLocation = parseLocation(activeBooking.driver?.location);
+
+  // Debug logging
+  console.log('TrackingPage - Booking data:', {
+    pickupLocation,
+    destinationLocation,
+    ambulanceLocation,
+    rawPickup: activeBooking.pickupLocation,
+    rawDestination: activeBooking.destinationLocation,
+    rawDriver: activeBooking.driver?.location
+  });
 
   return (
     <Container>
@@ -487,8 +511,10 @@ const TrackingPage = () => {
               ambulanceLocation={ambulanceLocation}
               patientLocation={pickupLocation}
               destination={destinationLocation}
-              showAmbulance={!!ambulanceLocation}
+              showRoute={true}
+              showAmbulance={true}
               showPatient={true}
+              center={null}
             />
           </MapCard>
         </TrackingGrid>

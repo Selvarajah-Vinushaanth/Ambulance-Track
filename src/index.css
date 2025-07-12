@@ -68,3 +68,58 @@ code {
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+/* Google Maps Ambulance Marker Styles */
+.ambulance-marker-label {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 2px solid #dc2626 !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  font-size: 10px !important;
+  font-weight: bold !important;
+  color: #dc2626 !important;
+  animation: pulse-ambulance 2s infinite;
+}
+
+@keyframes pulse-ambulance {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.6);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  }
+}
+
+/* Ambulance marker hover effect */
+.ambulance-marker-label:hover {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border-color: #dc2626 !important;
+}
+
+/* Real-time tracking animations */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Address input loading animation */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

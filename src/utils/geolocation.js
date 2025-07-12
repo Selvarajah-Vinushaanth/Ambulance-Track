@@ -114,16 +114,22 @@ export const estimateTravelTime = (distance) => {
   return Math.round(timeInMinutes);
 };
 
-// Get address from coordinates (reverse geocoding)
+// Get address from coordinates (reverse geocoding) - Using free Nominatim API
 export const getAddressFromCoordinates = async (lat, lng) => {
   try {
+    // Using OpenStreetMap Nominatim API (free, no API key required)
     const response = await fetch(
-      `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=YOUR_API_KEY&language=en&pretty=1`
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'AmbulanceApp/1.0'
+        }
+      }
     );
     const data = await response.json();
     
-    if (data.results && data.results.length > 0) {
-      return data.results[0].formatted;
+    if (data && data.display_name) {
+      return data.display_name;
     }
     
     return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;

@@ -77,6 +77,21 @@ const ClearAllButton = styled.button`
   }
 `;
 
+const MarkAllReadButton = styled.button`
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  &:hover {
+    background: #b91c1c;
+  }
+`;
+
 const NotificationList = styled.div`
   max-height: 400px;
   overflow-y: auto;
@@ -85,7 +100,6 @@ const NotificationList = styled.div`
 const NotificationItem = styled.div`
   padding: 1rem;
   border-bottom: 1px solid #f3f4f6;
-  cursor: pointer;
   transition: background-color 0.2s;
   ${props => !props.read && 'background: #f8fafc; border-left: 4px solid #3b82f6;'}
 
@@ -102,6 +116,43 @@ const NotificationContent = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
+`;
+
+const NotificationActions = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+`;
+
+const MarkReadButton = styled.button`
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
+`;
+
+const NotificationCloseButton = styled.button`
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+  }
 `;
 
 const NotificationIcon = styled.div`
@@ -218,14 +269,43 @@ const Notifications = () => {
 
   const clearAllNotifications = async () => {
     try {
-      const unreadNotifications = notifications.filter(n => !n.read);
-      for (const notification of unreadNotifications) {
-        await markAsRead(notification._id);
+      const response = await fetch('http://localhost:5000/api/notifications/mark-all-read', {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        setUnreadCount(0);
+        toast.success('All notifications marked as read');
+      } else {
+        throw new Error('Failed to mark all as read');
       }
-      toast.success('All notifications marked as read');
     } catch (error) {
       console.error('Failed to clear notifications:', error);
       toast.error('Failed to clear notifications');
+    }
+  };
+
+  const deleteAllNotifications = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/notifications/delete-all', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        setNotifications([]);
+        setUnreadCount(0);
+        toast.success('All notifications deleted');
+      }
+    } catch (error) {
+      console.error('Failed to delete notifications:', error);
+      toast.error('Failed to delete notifications');
     }
   };
 
@@ -245,13 +325,32 @@ const Notifications = () => {
   };
 
   const handleNotificationClick = (notification) => {
-    if (!notification.read) {
-      markAsRead(notification._id);
-    }
-    
     // Navigate to action URL if available
     if (notification.actionUrl) {
       window.location.href = notification.actionUrl;
+    }
+  };
+
+  const deleteNotification = async (notificationId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        setNotifications(prev => prev.filter(n => n._id !== notificationId));
+        setUnreadCount(prev => {
+          const wasUnread = notifications.find(n => n._id === notificationId)?.read === false;
+          return wasUnread ? Math.max(0, prev - 1) : prev;
+        });
+        toast.success('Notification deleted');
+      }
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+      toast.error('Failed to delete notification');
     }
   };
 
@@ -274,11 +373,18 @@ const Notifications = () => {
         <NotificationPanel>
           <NotificationHeader>
             <NotificationTitle>Notifications</NotificationTitle>
-            {unreadCount > 0 && (
-              <ClearAllButton onClick={clearAllNotifications}>
-                Mark all as read
-              </ClearAllButton>
-            )}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {unreadCount > 0 && (
+                <ClearAllButton onClick={clearAllNotifications}>
+                  Mark all as read
+                </ClearAllButton>
+              )}
+              {notifications.length > 0 && (
+                <MarkAllReadButton onClick={deleteAllNotifications}>
+                  Delete All
+                </MarkAllReadButton>
+              )}
+            </div>
           </NotificationHeader>
 
           <NotificationList>
@@ -292,7 +398,6 @@ const Notifications = () => {
                 <NotificationItem
                   key={notification._id}
                   read={notification.read}
-                  onClick={() => handleNotificationClick(notification)}
                 >
                   <NotificationContent>
                     <NotificationIcon type={notification.type}>
@@ -304,6 +409,21 @@ const Notifications = () => {
                       <NotificationTime>
                         {format(new Date(notification.createdAt), 'MMM dd, HH:mm')}
                       </NotificationTime>
+                      <NotificationActions>
+                        {!notification.read && (
+                          <MarkReadButton onClick={() => markAsRead(notification._id)}>
+                            <Check size={12} /> Mark as read
+                          </MarkReadButton>
+                        )}
+                        {notification.actionUrl && (
+                          <MarkReadButton onClick={() => handleNotificationClick(notification)}>
+                            View
+                          </MarkReadButton>
+                        )}
+                        <NotificationCloseButton onClick={() => deleteNotification(notification._id)}>
+                          <X size={12} />
+                        </NotificationCloseButton>
+                      </NotificationActions>
                     </NotificationText>
                   </NotificationContent>
                 </NotificationItem>
