@@ -379,11 +379,11 @@ const Notifications = () => {
                   Mark all as read
                 </ClearAllButton>
               )}
-              {notifications.length > 0 && (
+              {/* {notifications.length > 0 && (
                 <MarkAllReadButton onClick={deleteAllNotifications}>
                   Delete All
                 </MarkAllReadButton>
-              )}
+              )} */}
             </div>
           </NotificationHeader>
 
@@ -415,11 +415,11 @@ const Notifications = () => {
                             <Check size={12} /> Mark as read
                           </MarkReadButton>
                         )}
-                        {notification.actionUrl && (
+                        {/* {notification.actionUrl && (
                           <MarkReadButton onClick={() => handleNotificationClick(notification)}>
                             View
                           </MarkReadButton>
-                        )}
+                        )} */}
                         <NotificationCloseButton onClick={() => deleteNotification(notification._id)}>
                           <X size={12} />
                         </NotificationCloseButton>

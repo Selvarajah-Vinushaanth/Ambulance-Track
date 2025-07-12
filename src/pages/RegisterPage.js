@@ -267,7 +267,7 @@ const RegisterPage = () => {
                 <option value="">Select your role</option>
                 <option value="patient">Patient</option>
                 <option value="driver">Driver</option>
-                <option value="admin">Admin</option>
+                {/* <option value="admin">Admin</option> */}
               </Select>
             </InputWrapper>
             {errors.role && <ErrorMessage>{errors.role.message}</ErrorMessage>}

@@ -19,7 +19,9 @@ const MapComponent = ({
   showPatient = true,
   showAmbulance = true,
   showRoute = true,
-  center = null
+  center = null,
+  autoRefresh = false,
+  onRefresh = null
 }) => {
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [routePoints, setRoutePoints] = useState([]);
@@ -28,9 +30,31 @@ const MapComponent = ({
   const [directions, setDirections] = useState(null);
   const [travelTime, setTravelTime] = useState(null);
   const [distance, setDistance] = useState(null);
+  const [refreshTimer, setRefreshTimer] = useState(null);
   const mapRef = useRef(null);
 
   const { isLoaded, loadError } = useGoogleMaps();
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (autoRefresh && onRefresh) {
+      const interval = setInterval(() => {
+        console.log('Auto-refreshing map data...');
+        onRefresh();
+      }, 40000); // 40 seconds
+      
+      setRefreshTimer(interval);
+      
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      };
+    } else if (refreshTimer) {
+      clearInterval(refreshTimer);
+      setRefreshTimer(null);
+    }
+  }, [autoRefresh, onRefresh]);
 
   // Create icons only when Google Maps is loaded
   const getIcons = () => {
@@ -266,6 +290,26 @@ const MapComponent = ({
             gap: '6px'
           }}>
             🚗 Route Information
+            {autoRefresh && (
+              <div style={{
+                fontSize: '10px',
+                color: '#10b981',
+                marginLeft: 'auto',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <div style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#10b981',
+                  animation: 'pulse 2s infinite'
+                }}>
+                </div>
+                Auto-refresh
+              </div>
+            )}
           </div>
           {distance && (
             <div style={{ 
@@ -428,6 +472,11 @@ const MapComponent = ({
                 border-radius: 4px;
                 padding: 2px 4px;
                 text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+              }
+              @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.5; }
+                100% { opacity: 1; }
               }
             `}
           </style>

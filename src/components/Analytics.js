@@ -292,7 +292,7 @@ const Analytics = () => {
           </StatIcon>
           <StatContent>
             <StatValue>${analytics.today.totalRevenue?.toFixed(2) || '0.00'}</StatValue>
-            <StatLabel>Revenue Today</StatLabel>
+            <StatLabel>Revenue Today (excluding emergency cases)</StatLabel>
             <StatChange positive={analytics.monthly.totalRevenue > 0}>
               ${analytics.monthly.totalRevenue?.toFixed(2) || '0.00'} this month
             </StatChange>
@@ -312,7 +312,7 @@ const Analytics = () => {
           </StatContent>
         </StatCard>
 
-        <StatCard>
+        {/* <StatCard>
           <StatIcon type="rating">
             <Star size={24} />
           </StatIcon>
@@ -323,7 +323,7 @@ const Analytics = () => {
               {analytics.totalRatings} reviews
             </StatChange>
           </StatContent>
-        </StatCard>
+        </StatCard> */}
 
         <StatCard>
           <StatIcon type="response">
@@ -441,36 +441,67 @@ const Analytics = () => {
 
       <ChartsGrid>
         <TableCard>
-          <ChartTitle>Top Performing Drivers</ChartTitle>
+          <ChartTitle>System Overview</ChartTitle>
           <Table>
             <thead>
               <tr>
-                <TableHeader>Driver ID</TableHeader>
-                <TableHeader>Total Rides</TableHeader>
-                <TableHeader>Rating</TableHeader>
-                <TableHeader>Revenue</TableHeader>
+                <TableHeader>Metric</TableHeader>
+                <TableHeader>Today</TableHeader>
+                <TableHeader>This Month</TableHeader>
+                <TableHeader>Status</TableHeader>
               </tr>
             </thead>
             <tbody>
-              {analytics.driverPerformance?.slice(0, 5).map((driver, index) => (
-                <TableRow key={driver._id}>
-                  <TableCell>#{driver._id.slice(-6)}</TableCell>
-                  <TableCell>{driver.totalRides}</TableCell>
-                  <TableCell>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <Star size={14} fill="#f59e0b" color="#f59e0b" />
-                      {driver.avgRating?.toFixed(1) || '5.0'}
-                    </div>
-                  </TableCell>
-                  <TableCell>${driver.totalRevenue?.toFixed(2) || '0.00'}</TableCell>
-                </TableRow>
-              )) || (
-                <TableRow>
-                  <TableCell colSpan="4" style={{ textAlign: 'center', color: '#6b7280' }}>
-                    No driver performance data available
-                  </TableCell>
-                </TableRow>
-              )}
+              <TableRow>
+                <TableCell>Total Bookings</TableCell>
+                <TableCell>{analytics.today.totalBookings}</TableCell>
+                <TableCell>{analytics.monthly.totalBookings}</TableCell>
+                <TableCell>
+                  <StatusBadge status={analytics.today.totalBookings > 0 ? 'completed' : 'cancelled'}>
+                    {analytics.today.totalBookings > 0 ? 'Active' : 'Inactive'}
+                  </StatusBadge>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Completed Bookings</TableCell>
+                <TableCell>{analytics.today.completedBookings}</TableCell>
+                <TableCell>{analytics.monthly.completedBookings}</TableCell>
+                <TableCell>
+                  <StatusBadge status="completed">
+                    {((analytics.today.completedBookings / analytics.today.totalBookings) * 100).toFixed(1)}% Success
+                  </StatusBadge>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Total Revenue</TableCell>
+                <TableCell>${analytics.today.totalRevenue?.toFixed(2) || '0.00'}</TableCell>
+                <TableCell>${analytics.monthly.totalRevenue?.toFixed(2) || '0.00'}</TableCell>
+                <TableCell>
+                  <StatusBadge status={analytics.today.totalRevenue > 0 ? 'completed' : 'pending'}>
+                    {analytics.today.totalRevenue > 0 ? 'Earning' : 'No Revenue'}
+                  </StatusBadge>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Active Drivers</TableCell>
+                <TableCell>{analytics.activeDrivers}</TableCell>
+                <TableCell>{analytics.totalDrivers}</TableCell>
+                <TableCell>
+                  <StatusBadge status={analytics.activeDrivers > 0 ? 'completed' : 'cancelled'}>
+                    {((analytics.activeDrivers / analytics.totalDrivers) * 100).toFixed(1)}% Available
+                  </StatusBadge>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Average Response Time</TableCell>
+                <TableCell>{Math.round((analytics.responseTime?.avgResponseTime || 0) / 60000)} min</TableCell>
+                <TableCell>Last 7 days</TableCell>
+                <TableCell>
+                  <StatusBadge status={analytics.responseTime?.avgResponseTime < 600000 ? 'completed' : 'pending'}>
+                    {analytics.responseTime?.avgResponseTime < 600000 ? 'Good' : 'Needs Improvement'}
+                  </StatusBadge>
+                </TableCell>
+              </TableRow>
             </tbody>
           </Table>
         </TableCard>

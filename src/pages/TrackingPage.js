@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBooking } from '../contexts/BookingContext';
 import Header from '../components/Header';
 import MapComponent from '../components/MapComponent';
+import RealTimeTrackingMap from '../components/RealTimeTrackingMap';
 import LoadingSpinner from '../components/LoadingSpinner';
 import styled from 'styled-components';
 import { ArrowLeft, MapPin, Phone, User, Clock, AlertCircle, Navigation, CheckCircle } from 'lucide-react';
@@ -328,24 +329,10 @@ const TrackingPage = () => {
     }));
   };
 
-  const parseLocation = (locationData) => {
-    if (!locationData) return null;
-    
-    // If it's already an object with lat/lng, return it
-    if (typeof locationData === 'object' && locationData.lat && locationData.lng) {
-      return {
-        lat: parseFloat(locationData.lat),
-        lng: parseFloat(locationData.lng)
-      };
-    }
-    
-    // If it's a string, parse it
-    if (typeof locationData === 'string') {
-      const [lat, lng] = locationData.split(',').map(coord => parseFloat(coord.trim()));
-      return { lat, lng };
-    }
-    
-    return null;
+  const parseLocation = (locationString) => {
+    if (!locationString) return null;
+    const [lat, lng] = locationString.split(',').map(coord => parseFloat(coord.trim()));
+    return { lat, lng };
   };
 
   if (loading) {
@@ -372,17 +359,7 @@ const TrackingPage = () => {
 
   const pickupLocation = parseLocation(activeBooking.pickupLocation);
   const destinationLocation = parseLocation(activeBooking.destinationLocation);
-  const ambulanceLocation = parseLocation(activeBooking.driver?.location);
-
-  // Debug logging
-  console.log('TrackingPage - Booking data:', {
-    pickupLocation,
-    destinationLocation,
-    ambulanceLocation,
-    rawPickup: activeBooking.pickupLocation,
-    rawDestination: activeBooking.destinationLocation,
-    rawDriver: activeBooking.driver?.location
-  });
+  const ambulanceLocation = activeBooking.driver?.location;
 
   return (
     <Container>
@@ -515,6 +492,8 @@ const TrackingPage = () => {
               showAmbulance={true}
               showPatient={true}
               center={null}
+              autoRefresh={user?.role === 'patient'}
+              onRefresh={handleRefresh}
             />
           </MapCard>
         </TrackingGrid>
